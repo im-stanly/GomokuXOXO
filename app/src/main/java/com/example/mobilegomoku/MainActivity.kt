@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +63,7 @@ fun MainScreen() {
             Button(
                 onClick = {
                     val intent = Intent(context, GameActivity::class.java)
-                    intent.putExtra("playerSymbol", "X") // Pass player symbol for solo game
+                    intent.putExtra("playerSymbol", "X")
                     context.startActivity(intent)
                 },
                 modifier = Modifier
@@ -80,7 +79,7 @@ fun MainScreen() {
             Button(
                 onClick = {
                     val intent = Intent(context, GameActivity::class.java)
-                    intent.putExtra("playerSymbol", "O") // Pass player symbol for Bluetooth game
+                    intent.putExtra("playerSymbol", "O")
                     context.startActivity(intent)
                 },
                 modifier = Modifier
@@ -96,7 +95,7 @@ fun MainScreen() {
             Button(
                 onClick = {
                     val intent = Intent(context, GameActivity::class.java)
-                    intent.putExtra("playerSymbol", "X") // Pass player symbol for local game
+                    intent.putExtra("playerSymbol", "X")
                     context.startActivity(intent)
                 },
                 modifier = Modifier

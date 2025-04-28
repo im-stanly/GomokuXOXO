@@ -18,6 +18,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobilegomoku.ui.theme.MobilegomokuTheme
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clipToBounds
+import android.app.Activity
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.ui.platform.LocalContext
 
 class GameActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +53,15 @@ class GameActivity : ComponentActivity() {
 
 @Composable
 fun GameScreen(playerSymbol: String = "X") {
+    var scale by remember { mutableStateOf(1f) }
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+    var currentPlayerTurn by remember { mutableStateOf(playerSymbol) }
+    val minScale = 1f
+    val maxScale = 5f
+    val doubleTapZoomScale = 2f
+    val context = LocalContext.current as Activity
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -49,20 +74,75 @@ fun GameScreen(playerSymbol: String = "X") {
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
-                .padding(top = 32.dp, bottom = 24.dp)
+                .padding(top = 32.dp, bottom = 16.dp)
         )
-        // Placeholder for the game board
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(16.dp),
+                .clipToBounds(),
             contentAlignment = Alignment.Center
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.board),
+                contentDescription = "Game Board",
+                modifier = Modifier
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offsetX,
+                        translationY = offsetY
+                    )
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = { tapOffset ->
+                                if (scale > minScale) {
+                                    scale = minScale
+                                    offsetX = 0f
+                                    offsetY = 0f
+                                } else {
+                                    val newScale = doubleTapZoomScale.coerceIn(minScale, maxScale)
+                                    offsetX = tapOffset.x * (1 - newScale / scale) + offsetX * (newScale / scale)
+                                    offsetY = tapOffset.y * (1 - newScale / scale) + offsetY * (newScale / scale)
+                                    scale = newScale
+                                }
+                            }
+                        )
+                    }
+                    .pointerInput(Unit) {
+                        detectTransformGestures { centroid, pan, zoom, _ ->
+                            val oldScale = scale
+                            val newScale = (scale * zoom).coerceIn(minScale, maxScale)
+
+                            offsetX = (offsetX - centroid.x) * (newScale / oldScale) + centroid.x + pan.x
+                            offsetY = (offsetY - centroid.y) * (newScale / oldScale) + centroid.y + pan.y
+
+                            scale = newScale
+                        }
+                    }
+                    .fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(onClick = {
+                context.finish()
+            }) {
+                Text("Back")
+            }
             Text(
-                text = "Game Board Placeholder",
-                fontSize = 18.sp,
-                color = androidx.compose.ui.graphics.Color.Gray
+                modifier = Modifier.padding(end = 40.dp),
+                text = "Turn: $currentPlayerTurn",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
