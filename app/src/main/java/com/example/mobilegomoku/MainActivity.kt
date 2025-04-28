@@ -62,7 +62,11 @@ fun MainScreen() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
-                onClick = { /* TODO: Add navigation */ },
+                onClick = {
+                    val intent = Intent(context, GameActivity::class.java)
+                    intent.putExtra("playerSymbol", "X") // Pass player symbol for solo game
+                    context.startActivity(intent)
+                },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(60.dp)
@@ -74,7 +78,11 @@ fun MainScreen() {
                 )
             }
             Button(
-                onClick = { /* TODO: Add navigation */ },
+                onClick = {
+                    val intent = Intent(context, GameActivity::class.java)
+                    intent.putExtra("playerSymbol", "O") // Pass player symbol for Bluetooth game
+                    context.startActivity(intent)
+                },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(60.dp)
@@ -86,7 +94,11 @@ fun MainScreen() {
                 )
             }
             Button(
-                onClick = { /* TODO: Add navigation */ },
+                onClick = {
+                    val intent = Intent(context, GameActivity::class.java)
+                    intent.putExtra("playerSymbol", "X") // Pass player symbol for local game
+                    context.startActivity(intent)
+                },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(60.dp)
@@ -122,4 +134,3 @@ fun MainScreenPreview() {
         MainScreen()
     }
 }
-
