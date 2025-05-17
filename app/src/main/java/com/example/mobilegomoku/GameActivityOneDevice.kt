@@ -102,16 +102,16 @@ fun GameScreen(playerSymbol: String = "X") {
                                     }
                                 },
                                 modifier = Modifier
-                                    .padding(0.2.dp)
-                                    .width(50.dp)
-                                    .height(47.dp),
+                                    .padding(0.1.dp)
+                                    .width(60.dp)
+                                    .height(45.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFFebae34)
                                 )
                             ) {
                                 Text(
                                     text = board[row][col],
-                                    fontSize = 20.sp,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.Black,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Left

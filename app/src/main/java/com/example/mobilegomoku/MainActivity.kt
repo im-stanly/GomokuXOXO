@@ -20,6 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
+import com.example.mobilegomoku.userdata.UserDatabase
+import androidx.compose.runtime.LaunchedEffect
+import com.example.mobilegomoku.userdata.UserEntity
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +45,28 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
+    val userDao = UserDatabase.getInstance(context).userDao()
+    val lastUserState = remember { mutableStateOf<UserEntity?>(null) }
+
+    LaunchedEffect(Unit) {
+        lastUserState.value = userDao.getLatestUser()
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                lastUserState.value = userDao.getLatestUser()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val displayName = lastUserState.value?.username ?: "Guest"
 
     Column(
         modifier = Modifier
@@ -44,6 +75,12 @@ fun MainScreen() {
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            text = "Welcome, $displayName",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
         Image(
             painter = painterResource(id = R.drawable.gomoku_logo),
             contentDescription = "Gomoku Logo",
@@ -133,3 +170,4 @@ fun MainScreenPreview() {
         MainScreen()
     }
 }
+
