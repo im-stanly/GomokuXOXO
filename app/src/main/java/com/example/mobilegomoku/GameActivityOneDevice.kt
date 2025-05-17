@@ -18,13 +18,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobilegomoku.ui.theme.MobilegomokuTheme
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -34,6 +27,13 @@ import android.app.Activity
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 
 class GameActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,14 +53,14 @@ class GameActivity : ComponentActivity() {
 
 @Composable
 fun GameScreen(playerSymbol: String = "X") {
-    var scale by remember { mutableStateOf(1f) }
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
     var currentPlayerTurn by remember { mutableStateOf(playerSymbol) }
-    val minScale = 1f
-    val maxScale = 5f
-    val doubleTapZoomScale = 2f
     val context = LocalContext.current as Activity
+
+    val board = remember {
+        List(14) {
+            mutableStateListOf(*Array(14) { "" })
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -84,46 +84,43 @@ fun GameScreen(playerSymbol: String = "X") {
                 .clipToBounds(),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.board),
-                contentDescription = "Game Board",
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offsetX,
-                        translationY = offsetY
-                    )
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onDoubleTap = { tapOffset ->
-                                if (scale > minScale) {
-                                    scale = minScale
-                                    offsetX = 0f
-                                    offsetY = 0f
-                                } else {
-                                    val newScale = doubleTapZoomScale.coerceIn(minScale, maxScale)
-                                    offsetX = tapOffset.x * (1 - newScale / scale) + offsetX * (newScale / scale)
-                                    offsetY = tapOffset.y * (1 - newScale / scale) + offsetY * (newScale / scale)
-                                    scale = newScale
-                                }
+                    .fillMaxSize()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                for (row in 0 until 14) {
+                    Row {
+                        for (col in 0 until 14) {
+                            Button(
+                                onClick = {
+                                    if (board[row][col].isEmpty()) {
+                                        board[row][col] = currentPlayerTurn
+                                        currentPlayerTurn = if (currentPlayerTurn == "X") "O" else "X"
+                                    }
+                                },
+                                modifier = Modifier
+                                    .padding(0.2.dp)
+                                    .width(50.dp)
+                                    .height(47.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFebae34)
+                                )
+                            ) {
+                                Text(
+                                    text = board[row][col],
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Left
+                                )
                             }
-                        )
-                    }
-                    .pointerInput(Unit) {
-                        detectTransformGestures { centroid, pan, zoom, _ ->
-                            val oldScale = scale
-                            val newScale = (scale * zoom).coerceIn(minScale, maxScale)
-
-                            offsetX = (offsetX - centroid.x) * (newScale / oldScale) + centroid.x + pan.x
-                            offsetY = (offsetY - centroid.y) * (newScale / oldScale) + centroid.y + pan.y
-
-                            scale = newScale
                         }
                     }
-                    .fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
+                }
+            }
         }
 
         Row(
