@@ -34,15 +34,31 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
+import kotlin.random.Random
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+
+enum class GamePhase {
+    OPENING_MOVES,
+    CHOICE,
+    NORMAL_PLAY
+}
+
+fun getSymbolForOpeningMove(moveIndex: Int): String {
+    return if (moveIndex < 2) "X" else "O"
+}
 
 class GameOneDeviceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val playerSymbol = intent.getStringExtra("playerSymbol") ?: "Player1"
-        val opponentName = intent.getStringExtra("opponentName") ?: "Player2"
+        val p1NameFromIntent = intent.getStringExtra("playerSymbol") ?: "Player1"
+        val p2NameFromIntent = intent.getStringExtra("opponentName") ?: "Player2"
         setContent {
             MobilegomokuTheme {
-                GameScreenOneDevice(playerSymbol = playerSymbol, opponentName = opponentName)
+                GameScreenOneDevice(
+                    initialPlayer1Name = p1NameFromIntent,
+                    initialPlayer2Name = p2NameFromIntent
+                )
             }
         }
     }
@@ -50,17 +66,28 @@ class GameOneDeviceActivity : ComponentActivity() {
 
 @Composable
 fun GameScreenOneDevice(
-    playerSymbol: String,
-    opponentName: String
+    initialPlayer1Name: String,
+    initialPlayer2Name: String
 ) {
-    var currentSymbolForTurn by remember { mutableStateOf("X") }
-    val context = LocalContext.current as Activity
-
-    val board = remember {
-        List(14) {
-            mutableStateListOf(*Array(14) { "" })
+    val (openingPlayer, choicePlayer) = remember(initialPlayer1Name, initialPlayer2Name) {
+        if (Random.nextBoolean()) {
+            initialPlayer1Name to initialPlayer2Name
+        } else {
+            initialPlayer2Name to initialPlayer1Name
         }
     }
+
+    var gamePhase by remember { mutableStateOf(GamePhase.OPENING_MOVES) }
+    var openingMovesMade by remember { mutableStateOf(0) }
+
+    var playerWhoIsX by remember { mutableStateOf("") }
+    var playerWhoIsO by remember { mutableStateOf("") }
+    var currentNormalPlaySymbol by remember { mutableStateOf("X") }
+
+    var showChoiceDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current as Activity
+    val board = remember { List(14) { mutableStateListOf(*Array(14) { "" }) } }
 
     Column(
         modifier = Modifier
@@ -70,11 +97,16 @@ fun GameScreenOneDevice(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "$playerSymbol vs $opponentName",
+            text = "$initialPlayer1Name vs $initialPlayer2Name",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .padding(top = 32.dp, bottom = 16.dp)
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Text(
+            text = "Coin Toss: $openingPlayer makes opening moves (XXO).",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
         Box(
@@ -97,8 +129,26 @@ fun GameScreenOneDevice(
                             Button(
                                 onClick = {
                                     if (board[row][col].isEmpty()) {
-                                        board[row][col] = currentSymbolForTurn
-                                        currentSymbolForTurn = if (currentSymbolForTurn == "X") "O" else "X"
+                                        when (gamePhase) {
+                                            GamePhase.OPENING_MOVES -> {
+                                                if (openingMovesMade < 3) {
+                                                    val symbolToPlace = getSymbolForOpeningMove(openingMovesMade)
+                                                    board[row][col] = symbolToPlace
+                                                    openingMovesMade++
+                                                    if (openingMovesMade == 3) {
+                                                        gamePhase = GamePhase.CHOICE
+                                                        showChoiceDialog = true
+                                                    }
+                                                }
+                                            }
+                                            GamePhase.NORMAL_PLAY -> {
+                                                board[row][col] = currentNormalPlaySymbol
+                                                currentNormalPlaySymbol = if (currentNormalPlaySymbol == "X") "O" else "X"
+                                            }
+                                            GamePhase.CHOICE -> {
+                                                // Board clicks disabled during choice phase
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier
@@ -130,20 +180,61 @@ fun GameScreenOneDevice(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Button(onClick = {
-                context.finish()
-            }) {
+            Button(onClick = { context.finish() }) {
                 Text("Back")
             }
 
-            val currentPlayerDisplayName = if (currentSymbolForTurn == "X") playerSymbol else opponentName
+            val turnText = when (gamePhase) {
+                GamePhase.OPENING_MOVES -> {
+                    if (openingMovesMade < 3) {
+                        "Turn: $openingPlayer. Place ${getSymbolForOpeningMove(openingMovesMade)} (${openingMovesMade + 1}/3)"
+                    } else {
+                        "Opening moves complete. $choicePlayer to choose."
+                    }
+                }
+                GamePhase.CHOICE -> "Turn: $choicePlayer. Choose your symbol."
+                GamePhase.NORMAL_PLAY -> {
+                    val currentPlayerName = if (currentNormalPlaySymbol == "X") playerWhoIsX else playerWhoIsO
+                    "Turn: $currentPlayerName ($currentNormalPlaySymbol)"
+                }
+            }
             Text(
                 modifier = Modifier.padding(end = 40.dp),
-                text = "Turn: $currentPlayerDisplayName",
+                text = turnText,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium
             )
         }
+    }
+
+    if (showChoiceDialog) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Symbol Choice for $choicePlayer") },
+            text = { Text("$openingPlayer has made the opening moves (XXO). $choicePlayer, choose your symbol to continue.") },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = {
+                        playerWhoIsX = choicePlayer
+                        playerWhoIsO = openingPlayer
+                        currentNormalPlaySymbol = "O"
+                        gamePhase = GamePhase.NORMAL_PLAY
+                        showChoiceDialog = false
+                    }) {
+                        Text("Play as X")
+                    }
+                    TextButton(onClick = {
+                        playerWhoIsX = openingPlayer
+                        playerWhoIsO = choicePlayer
+                        currentNormalPlaySymbol = "X"
+                        gamePhase = GamePhase.NORMAL_PLAY
+                        showChoiceDialog = false
+                    }) {
+                        Text("Play as O")
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -151,6 +242,6 @@ fun GameScreenOneDevice(
 @Composable
 fun GameScreenOneDevicePreview() {
     MobilegomokuTheme {
-        GameScreenOneDevice(playerSymbol = "O", opponentName = "Player2")
+        GameScreenOneDevice(initialPlayer1Name = "Alice", initialPlayer2Name = "Bob")
     }
 }
