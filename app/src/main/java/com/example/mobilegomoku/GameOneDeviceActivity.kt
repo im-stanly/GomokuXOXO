@@ -53,7 +53,7 @@ fun GameScreenOneDevice(
     playerSymbol: String,
     opponentName: String
 ) {
-    var currentPlayerTurn by remember { mutableStateOf(playerSymbol) }
+    var currentSymbolForTurn by remember { mutableStateOf("X") }
     val context = LocalContext.current as Activity
 
     val board = remember {
@@ -97,8 +97,8 @@ fun GameScreenOneDevice(
                             Button(
                                 onClick = {
                                     if (board[row][col].isEmpty()) {
-                                        board[row][col] = currentPlayerTurn
-                                        currentPlayerTurn = if (currentPlayerTurn == "X") "O" else "X"
+                                        board[row][col] = currentSymbolForTurn
+                                        currentSymbolForTurn = if (currentSymbolForTurn == "X") "O" else "X"
                                     }
                                 },
                                 modifier = Modifier
@@ -135,9 +135,11 @@ fun GameScreenOneDevice(
             }) {
                 Text("Back")
             }
+
+            val currentPlayerDisplayName = if (currentSymbolForTurn == "X") playerSymbol else opponentName
             Text(
                 modifier = Modifier.padding(end = 40.dp),
-                text = "Turn: $currentPlayerTurn",
+                text = "Turn: $currentPlayerDisplayName",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -149,6 +151,6 @@ fun GameScreenOneDevice(
 @Composable
 fun GameScreenOneDevicePreview() {
     MobilegomokuTheme {
-        GameScreen(playerSymbol = "O")
+        GameScreenOneDevice(playerSymbol = "O", opponentName = "Player2")
     }
 }
