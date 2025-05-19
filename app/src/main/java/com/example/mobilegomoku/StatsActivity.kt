@@ -46,12 +46,16 @@ fun StatsScreen(onBackClick: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var loggedInUser by remember { mutableStateOf<String?>(null) }
+    var userStats by remember { mutableStateOf<com.example.mobilegomoku.userdata.UserEntity?>(null) }
 
     var showSignUpDialog by remember { mutableStateOf(false) }
     var showLoginDialog by remember { mutableStateOf(false) }
 
-    // Track login errors
     var loginError by remember { mutableStateOf("") }
+
+    LaunchedEffect(loggedInUser) {
+        userStats = loggedInUser?.let { userDao.getUser(it) }
+    }
 
     Column(
         modifier = Modifier
@@ -76,7 +80,6 @@ fun StatsScreen(onBackClick: () -> Unit) {
             }
         }
 
-        // Display logged-in user or “Guest”
         Text(
             text = if (loggedInUser.isNullOrEmpty()) "Guest" else "Logged in as $loggedInUser",
             fontSize = 16.sp,
@@ -84,7 +87,6 @@ fun StatsScreen(onBackClick: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        // Additional row for logout & delete account if user is logged in
         if (!loggedInUser.isNullOrEmpty()) {
             Row(
                 modifier = Modifier
@@ -94,7 +96,6 @@ fun StatsScreen(onBackClick: () -> Unit) {
             ) {
                 Button(
                     onClick = {
-                        // Log out
                         loggedInUser = null
                     }
                 ) {
@@ -102,7 +103,6 @@ fun StatsScreen(onBackClick: () -> Unit) {
                 }
                 Button(
                     onClick = {
-                        // Delete account
                         userDao.deleteUser(loggedInUser!!)
                         loggedInUser = null
                     }
@@ -138,17 +138,17 @@ fun StatsScreen(onBackClick: () -> Unit) {
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
-                    text = "Win streak: x",
+                    text = "Win streak: ${userStats?.winStreak ?: 0}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Win count: x",
+                    text = "Win count: ${userStats?.winCount ?: 0}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Loose count: x",
+                    text = "Loss count: ${userStats?.lossCount ?: 0}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -167,7 +167,6 @@ fun StatsScreen(onBackClick: () -> Unit) {
             Text("Back to Main Screen", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
 
-        // Sign Up dialog
         if (showSignUpDialog) {
             AlertDialog(
                 onDismissRequest = { showSignUpDialog = false },
@@ -191,7 +190,6 @@ fun StatsScreen(onBackClick: () -> Unit) {
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        // Store in DB
                         userDao.insertUser(UserEntity(username, password))
                         loggedInUser = username
                         showSignUpDialog = false
@@ -207,12 +205,11 @@ fun StatsScreen(onBackClick: () -> Unit) {
             )
         }
 
-        // Log In dialog
         if (showLoginDialog) {
             AlertDialog(
                 onDismissRequest = {
                     showLoginDialog = false
-                    loginError = "" // clear error when dialog closes
+                    loginError = ""
                 },
                 title = { Text("Log In") },
                 text = {
@@ -230,7 +227,7 @@ fun StatsScreen(onBackClick: () -> Unit) {
                             label = { Text("Password") },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        // Show login error if any
+
                         if (loginError.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -247,7 +244,7 @@ fun StatsScreen(onBackClick: () -> Unit) {
                         if (user != null && user.password == password) {
                             loggedInUser = user.username
                             showLoginDialog = false
-                            loginError = "" // clear error on success
+                            loginError = ""
                         } else {
                             loginError = "Invalid username or password"
                         }
@@ -275,4 +272,3 @@ fun StatsScreenPreview() {
         StatsScreen(onBackClick = {})
     }
 }
-

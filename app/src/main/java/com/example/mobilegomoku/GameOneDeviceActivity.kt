@@ -37,6 +37,9 @@ import androidx.compose.foundation.layout.height
 import kotlin.random.Random
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
+import com.example.mobilegomoku.userdata.UserDatabase
 
 enum class GamePhase {
     OPENING_MOVES,
@@ -134,6 +137,8 @@ fun GameScreenOneDevice(
     var winningLineCoordinates by remember { mutableStateOf<List<Pair<Int, Int>>>(emptyList()) }
 
     val context = LocalContext.current as Activity
+    val userDao = UserDatabase.getInstance(context).userDao()
+    val currentUser = initialPlayer1Name
     val board = remember { List(14) { mutableStateListOf(*Array(14) { "" }) } }
 
     Column(
@@ -305,6 +310,17 @@ fun GameScreenOneDevice(
                 }
             }
         )
+    }
+
+    LaunchedEffect(gamePhase) {
+        if (gamePhase == GamePhase.GAME_OVER) {
+            if (currentUser != "Guest") {
+                val didWin = if (winnerName == currentUser) 1 else 0
+                userDao.updateResult(currentUser, didWin)
+            } else {
+                Toast.makeText(context, "Please log in to store your results", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }
 
