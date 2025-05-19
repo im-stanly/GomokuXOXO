@@ -40,6 +40,7 @@ import androidx.compose.material3.TextButton
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
 import com.example.mobilegomoku.userdata.UserDatabase
+import android.media.MediaPlayer
 
 enum class GamePhase {
     OPENING_MOVES,
@@ -192,6 +193,11 @@ fun GameScreenOneDevice(
                                                     playerMakingMoveName = openingPlayer
                                                     openingMovesMade++
 
+                                                    MediaPlayer.create(context, R.raw.check_sound).apply {
+                                                        setOnCompletionListener { release() }
+                                                        start()
+                                                    }
+
                                                     if (symbolPlacedThisTurn.isNotEmpty()) {
                                                         val winningLine = checkWin(board, symbolPlacedThisTurn, row, col)
                                                         if (winningLine != null) {
@@ -209,6 +215,11 @@ fun GameScreenOneDevice(
                                                 symbolPlacedThisTurn = currentNormalPlaySymbol
                                                 board[row][col] = symbolPlacedThisTurn
                                                 playerMakingMoveName = if (currentNormalPlaySymbol == "X") playerWhoIsX else playerWhoIsO
+
+                                                MediaPlayer.create(context, R.raw.check_sound).apply {
+                                                    setOnCompletionListener { release() }
+                                                    start()
+                                                }
 
                                                 if (symbolPlacedThisTurn.isNotEmpty()) {
                                                     val winningLine = checkWin(board, symbolPlacedThisTurn, row, col)
@@ -314,6 +325,11 @@ fun GameScreenOneDevice(
 
     LaunchedEffect(gamePhase) {
         if (gamePhase == GamePhase.GAME_OVER) {
+            MediaPlayer.create(context, R.raw.applause).apply {
+                setOnCompletionListener { release() }
+                start()
+            }
+
             if (currentUser != "Guest") {
                 val didWin = if (winnerName == currentUser) 1 else 0
                 userDao.updateResult(currentUser, didWin)
