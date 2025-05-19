@@ -41,11 +41,55 @@ import androidx.compose.material3.TextButton
 enum class GamePhase {
     OPENING_MOVES,
     CHOICE,
-    NORMAL_PLAY
+    NORMAL_PLAY,
+    GAME_OVER
 }
 
 fun getSymbolForOpeningMove(moveIndex: Int): String {
     return if (moveIndex < 2) "X" else "O"
+}
+
+fun checkWin(board: List<List<String>>, symbol: String, r: Int, c: Int): List<Pair<Int, Int>>? {
+    if (symbol.isEmpty()) return null
+    val directions = listOf(
+        Pair(0, 1),
+        Pair(1, 0),
+        Pair(1, 1),
+        Pair(1, -1)
+    )
+    val boardSize = board.size
+
+    for ((dr, dc) in directions) {
+        var count = 1
+        val currentLineCoordinates = mutableListOf(r to c)
+
+        for (i in 1 until 5) {
+            val nr = r + dr * i
+            val nc = c + dc * i
+            if (nr in 0 until boardSize && nc in 0 until boardSize && board[nr][nc] == symbol) {
+                count++
+                currentLineCoordinates.add(nr to nc)
+            } else {
+                break
+            }
+        }
+
+        for (i in 1 until 5) {
+            val nr = r - dr * i
+            val nc = c - dc * i
+            if (nr in 0 until boardSize && nc in 0 until boardSize && board[nr][nc] == symbol) {
+                count++
+                currentLineCoordinates.add(nr to nc)
+            } else {
+                break
+            }
+        }
+
+        if (count >= 5) {
+            return currentLineCoordinates
+        }
+    }
+    return null
 }
 
 class GameOneDeviceActivity : ComponentActivity() {
@@ -85,6 +129,9 @@ fun GameScreenOneDevice(
     var currentNormalPlaySymbol by remember { mutableStateOf("X") }
 
     var showChoiceDialog by remember { mutableStateOf(false) }
+
+    var winnerName by remember { mutableStateOf<String?>(null) }
+    var winningLineCoordinates by remember { mutableStateOf<List<Pair<Int, Int>>>(emptyList()) }
 
     val context = LocalContext.current as Activity
     val board = remember { List(14) { mutableStateListOf(*Array(14) { "" }) } }
@@ -128,26 +175,48 @@ fun GameScreenOneDevice(
                         for (col in 0 until 14) {
                             Button(
                                 onClick = {
-                                    if (board[row][col].isEmpty()) {
+                                    if (board[row][col].isEmpty() && gamePhase != GamePhase.GAME_OVER && gamePhase != GamePhase.CHOICE) {
+                                        var symbolPlacedThisTurn: String? = null
+                                        var playerMakingMoveName: String? = null
+
                                         when (gamePhase) {
                                             GamePhase.OPENING_MOVES -> {
                                                 if (openingMovesMade < 3) {
-                                                    val symbolToPlace = getSymbolForOpeningMove(openingMovesMade)
-                                                    board[row][col] = symbolToPlace
+                                                    symbolPlacedThisTurn = getSymbolForOpeningMove(openingMovesMade)
+                                                    board[row][col] = symbolPlacedThisTurn
+                                                    playerMakingMoveName = openingPlayer
                                                     openingMovesMade++
-                                                    if (openingMovesMade == 3) {
-                                                        gamePhase = GamePhase.CHOICE
-                                                        showChoiceDialog = true
+
+                                                    if (symbolPlacedThisTurn.isNotEmpty()) {
+                                                        val winningLine = checkWin(board, symbolPlacedThisTurn, row, col)
+                                                        if (winningLine != null) {
+                                                            winningLineCoordinates = winningLine
+                                                            winnerName = playerMakingMoveName
+                                                            gamePhase = GamePhase.GAME_OVER
+                                                        } else if (openingMovesMade == 3 && gamePhase != GamePhase.GAME_OVER) {
+                                                            gamePhase = GamePhase.CHOICE
+                                                            showChoiceDialog = true
+                                                        }
                                                     }
                                                 }
                                             }
                                             GamePhase.NORMAL_PLAY -> {
-                                                board[row][col] = currentNormalPlaySymbol
-                                                currentNormalPlaySymbol = if (currentNormalPlaySymbol == "X") "O" else "X"
+                                                symbolPlacedThisTurn = currentNormalPlaySymbol
+                                                board[row][col] = symbolPlacedThisTurn
+                                                playerMakingMoveName = if (currentNormalPlaySymbol == "X") playerWhoIsX else playerWhoIsO
+
+                                                if (symbolPlacedThisTurn.isNotEmpty()) {
+                                                    val winningLine = checkWin(board, symbolPlacedThisTurn, row, col)
+                                                    if (winningLine != null) {
+                                                        winningLineCoordinates = winningLine
+                                                        winnerName = playerMakingMoveName
+                                                        gamePhase = GamePhase.GAME_OVER
+                                                    } else {
+                                                        currentNormalPlaySymbol = if (currentNormalPlaySymbol == "X") "O" else "X"
+                                                    }
+                                                }
                                             }
-                                            GamePhase.CHOICE -> {
-                                                // Board clicks disabled during choice phase
-                                            }
+                                            else -> {}
                                         }
                                     }
                                 },
@@ -156,7 +225,7 @@ fun GameScreenOneDevice(
                                     .width(60.dp)
                                     .height(45.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFebae34)
+                                    containerColor = if (winningLineCoordinates.contains(row to col)) Color.Green else Color(0xFFebae34)
                                 )
                             ) {
                                 Text(
@@ -197,6 +266,7 @@ fun GameScreenOneDevice(
                     val currentPlayerName = if (currentNormalPlaySymbol == "X") playerWhoIsX else playerWhoIsO
                     "Turn: $currentPlayerName ($currentNormalPlaySymbol)"
                 }
+                GamePhase.GAME_OVER -> "$winnerName wins!"
             }
             Text(
                 modifier = Modifier.padding(end = 40.dp),
@@ -207,7 +277,7 @@ fun GameScreenOneDevice(
         }
     }
 
-    if (showChoiceDialog) {
+    if (showChoiceDialog && gamePhase == GamePhase.CHOICE) {
         AlertDialog(
             onDismissRequest = {},
             title = { Text("Symbol Choice for $choicePlayer") },
