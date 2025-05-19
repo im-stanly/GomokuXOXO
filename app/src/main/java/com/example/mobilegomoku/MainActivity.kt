@@ -25,10 +25,13 @@ import androidx.compose.runtime.LaunchedEffect
 import com.example.mobilegomoku.userdata.UserEntity
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.material3.TextButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +70,8 @@ fun MainScreen() {
     }
 
     val displayName = lastUserState.value?.username ?: "Guest"
+    val (showSecondPlayerDialog, setShowSecondPlayerDialog) = remember { mutableStateOf(false) }
+    var secondPlayerName by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -131,9 +136,7 @@ fun MainScreen() {
             }
             Button(
                 onClick = {
-                    val intent = Intent(context, GameActivity::class.java)
-                    intent.putExtra("playerSymbol", "X")
-                    context.startActivity(intent)
+                    setShowSecondPlayerDialog(true)
                 },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
@@ -161,6 +164,36 @@ fun MainScreen() {
             }
         }
     }
+
+    if (showSecondPlayerDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { setShowSecondPlayerDialog(false) },
+            title = { Text("Second Player") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = secondPlayerName,
+                    onValueChange = { secondPlayerName = it },
+                    label = { Text("Second Player Name") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val intent = Intent(context, GameOneDeviceActivity::class.java)
+                    intent.putExtra("playerSymbol", displayName)
+                    intent.putExtra("opponentName", secondPlayerName)
+                    context.startActivity(intent)
+                    setShowSecondPlayerDialog(false)
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { setShowSecondPlayerDialog(false) }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -170,4 +203,3 @@ fun MainScreenPreview() {
         MainScreen()
     }
 }
-

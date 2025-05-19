@@ -18,6 +18,7 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.Mobilegomoku" />
         <activity android:name=".GameActivity" />
+        <activity android:name=".GameOneDeviceActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
