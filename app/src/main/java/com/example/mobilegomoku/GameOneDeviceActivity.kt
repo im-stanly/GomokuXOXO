@@ -49,53 +49,6 @@ enum class GamePhase {
     GAME_OVER
 }
 
-fun getSymbolForOpeningMove(moveIndex: Int): String {
-    return if (moveIndex < 2) "X" else "O"
-}
-
-fun checkWin(board: List<List<String>>, symbol: String, r: Int, c: Int): List<Pair<Int, Int>>? {
-    if (symbol.isEmpty()) return null
-    val directions = listOf(
-        Pair(0, 1),
-        Pair(1, 0),
-        Pair(1, 1),
-        Pair(1, -1)
-    )
-    val boardSize = board.size
-
-    for ((dr, dc) in directions) {
-        var count = 1
-        val currentLineCoordinates = mutableListOf(r to c)
-
-        for (i in 1 until 5) {
-            val nr = r + dr * i
-            val nc = c + dc * i
-            if (nr in 0 until boardSize && nc in 0 until boardSize && board[nr][nc] == symbol) {
-                count++
-                currentLineCoordinates.add(nr to nc)
-            } else {
-                break
-            }
-        }
-
-        for (i in 1 until 5) {
-            val nr = r - dr * i
-            val nc = c - dc * i
-            if (nr in 0 until boardSize && nc in 0 until boardSize && board[nr][nc] == symbol) {
-                count++
-                currentLineCoordinates.add(nr to nc)
-            } else {
-                break
-            }
-        }
-
-        if (count >= 5) {
-            return currentLineCoordinates
-        }
-    }
-    return null
-}
-
 class GameOneDeviceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -346,4 +299,51 @@ fun GameScreenOneDevicePreview() {
     MobilegomokuTheme {
         GameScreenOneDevice(initialPlayer1Name = "Alice", initialPlayer2Name = "Bob")
     }
+}
+
+fun getSymbolForOpeningMove(moveIndex: Int): String {
+    return if (moveIndex < 2) "X" else "O"
+}
+
+fun checkWin(board: List<List<String>>, symbol: String, r: Int, c: Int): List<Pair<Int, Int>>? {
+    if (symbol.isEmpty()) return null
+    val directions = listOf(
+        Pair(0, 1),
+        Pair(1, 0),
+        Pair(1, 1),
+        Pair(1, -1)
+    )
+    val boardSize = board.size
+
+    for ((dr, dc) in directions) {
+        var count = 1
+        val currentLineCoordinates = mutableListOf(r to c)
+
+        for (i in 1 until 5) {
+            val nr = r + dr * i
+            val nc = c + dc * i
+            if (nr in 0 until boardSize && nc in 0 until boardSize && board[nr][nc] == symbol) {
+                count++
+                currentLineCoordinates.add(nr to nc)
+            } else {
+                break
+            }
+        }
+
+        for (i in 1 until 5) {
+            val nr = r - dr * i
+            val nc = c - dc * i
+            if (nr in 0 until boardSize && nc in 0 until boardSize && board[nr][nc] == symbol) {
+                count++
+                currentLineCoordinates.add(nr to nc)
+            } else {
+                break
+            }
+        }
+
+        if (count >= 5) {
+            return currentLineCoordinates
+        }
+    }
+    return null
 }
