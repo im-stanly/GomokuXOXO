@@ -104,7 +104,9 @@ fun MainScreen() {
         ) {
             Button(
                 onClick = {
-                    context.startActivity(Intent(context, GameWithWifiActivity::class.java))
+                    val intent = Intent(context, GameWithWifiActivity::class.java)
+                    intent.putExtra("loggedInUserName", displayName)
+                    context.startActivity(intent)
                 },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)

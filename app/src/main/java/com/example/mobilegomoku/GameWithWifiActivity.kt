@@ -49,20 +49,20 @@ enum class WifiGamePhase {
     GAME_OVER
 }
 
-private const val BASE_URL = "http://<IP>:8080"
+private const val BASE_URL = "http://<IP>:8080" //ip to komenda "ipconfig getifaddr en0" oraz port 8080
 
 class GameWithWifiActivity : ComponentActivity() {
     private var mediaPlayer: MediaPlayer? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val hostPlayerName = intent.getStringExtra("playerSymbol") ?: "HostPlayer"
+        val actualHostPlayerName = intent.getStringExtra("loggedInUserName") ?: "Guest"
 
         mediaPlayer = MediaPlayer.create(this, R.raw.applause)
 
         setContent {
             MobilegomokuTheme {
                 GameWithWifiScreen(
-                    hostPlayerName = hostPlayerName,
+                    hostPlayerName = actualHostPlayerName,
                     onGameEnd = {
                         mediaPlayer?.start()
                     }
@@ -137,7 +137,9 @@ fun GameWithWifiScreen(
                         onGameEnd()
 
                         if (hostPlayerName != "Guest") {
-                            userDao.updateResult(hostPlayerName, 0)
+                            coroutineScope.launch {
+                                userDao.updateResult(hostPlayerName, 0)
+                            }
                         }
                     } else {
                         currentTurnSymbol = localPlayerSymbol
@@ -273,6 +275,7 @@ fun GameWithWifiScreen(
                                     if (gamePhase == WifiGamePhase.GAME_OVER || board[r][c].isNotEmpty()) return@Button
 
                                     if (gamePhase == WifiGamePhase.LOCAL_PLAYER_OPENING) {
+                                        //board[1][1] = "O"
                                         val symbolToPlace = if (localPlayerOpeningMovesCount < 2) "X" else "O"
                                         board[r][c] = symbolToPlace
                                         localPlayerOpeningMovesCount++
@@ -284,10 +287,8 @@ fun GameWithWifiScreen(
                                                     opponentApiSymbol = apiChosenSymbol
                                                     localPlayerSymbol = if (apiChosenSymbol == "X") "O" else "X"
 
-//                                                    currentTurnSymbol = opponentApiSymbol
                                                     currentTurnSymbol = localPlayerSymbol
                                                     gamePhase = WifiGamePhase.NORMAL_PLAY
-//                                                    makeApiMove()
                                                 } catch (e: Exception) {
                                                     e.printStackTrace()
                                                     Toast.makeText(context, "Error getting API symbol choice: ${e.message}", Toast.LENGTH_LONG).show()
@@ -306,7 +307,9 @@ fun GameWithWifiScreen(
                                             gamePhase = WifiGamePhase.GAME_OVER
                                             onGameEnd()
                                             if (hostPlayerName != "Guest") {
-                                                userDao.updateResult(hostPlayerName, 1)
+                                                coroutineScope.launch {
+                                                    userDao.updateResult(hostPlayerName, 1)
+                                                }
                                             }
                                         } else {
                                             currentTurnSymbol = opponentApiSymbol
